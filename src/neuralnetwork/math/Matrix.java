@@ -29,7 +29,7 @@ public class Matrix {
 	
 	public Matrix(float[] mat_, boolean isColumned) {
 		if(isColumned){
-			this.mat = new float[mat_.length][0];
+			this.mat = new float[mat_.length][1];
 			for(int x = 0; x<mat_.length;x++) {
 				this.mat[x][0] = mat_[x];
 			}
