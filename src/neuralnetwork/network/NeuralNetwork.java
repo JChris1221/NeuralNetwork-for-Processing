@@ -53,10 +53,12 @@ public class NeuralNetwork {
 		//weights between layers of hidden
 		for(int x = 0; x<hidden.length - 1;x++) {
 			weights[x+1] = new Matrix(hidden[x+1].length, hidden[x].length);
+			biases[x+1] = new float[hidden[x+1].length];
 		}
 
 		//weight matrix between last hidden layer and output
 		weights[weights.length-1] = new Matrix(outputs.length, hidden[hidden.length-1].length);
+		biases[biases.length - 1] = new float[outputs.length];
 	}
 	
 	//Returns the total number of layers the network has
@@ -71,7 +73,18 @@ public class NeuralNetwork {
 		for(int x = 0; x<hidden.length; x++) {
 			specs += "Hidden Layer " + (x+1) + ": " + hidden[x].length + "\n";
 		}
-		
+		//Weight Count
+		int weightCount = 0;
+		for(int x = 0; x<weights.length;x++){
+			weightCount += weights[x].Rows()*weights[x].Cols();
+		}
+		//Biases Count
+		int biasesCount = 0;
+		for(int x = 0; x<biases.length;x++) {
+			biasesCount += biases[x].length;
+		}
+		specs+="Total Weights: "+weightCount+"\n";
+		specs+="Total Biases: "+biasesCount+"\n";
 		specs+="Outputs: " +outputs.length;
 		return specs;
 	}
@@ -80,27 +93,24 @@ public class NeuralNetwork {
 	public float[] FeedForward(float[] i_) {
 		
 		//Input to first hidden
-		Matrix inputM = new Matrix(i_,true);
-		Matrix passed = Matrix.Mul(weights[0], inputM);
-
-		//ADD BIAS
-//		passed.Add(bias_matrix);
-		
-		hidden[0] = Activation(passed).GetColumn(0);
+		Matrix inputM = new Matrix(i_,true); // put in matrix object
+		Matrix passed = Matrix.Mul(weights[0], inputM); //matrix multiply
+		passed.Add(new Matrix(biases[0], true)); // add biases
+		hidden[0] = Activation(passed).GetColumn(0);//pass to first hidden layer
 		
 		//pass the answers forward the hidden layers
 		for(int x = 1; x<hidden.length;x++)	{
-			inputM = new Matrix(hidden[x-1], true);
-			passed = Matrix.Mul(weights[x], inputM);
-//			passed.Add(new Matrix(biases[0], true));
-			hidden[x] = Activation(passed).GetColumn(0);
+			inputM = new Matrix(hidden[x-1], true);//put previous layer in matrix object
+			passed = Matrix.Mul(weights[x], inputM);//matrix multiply
+			passed.Add(new Matrix(biases[x], true));//add biases
+			hidden[x] = Activation(passed).GetColumn(0);//pass to next layer
 		}
 		
 		//Pass the last hidden layer to get output
-		inputM = new Matrix(hidden[hidden.length-1], true);
-		passed = Matrix.Mul(weights[weights.length-1], inputM);
-//		passed.Add(bias_matrix);
-		outputs = Activation(passed).GetColumn(0);
+		inputM = new Matrix(hidden[hidden.length-1], true);//put last hidden layer to matrix object
+		passed = Matrix.Mul(weights[weights.length-1], inputM);//matrix mulitply
+		passed.Add(new Matrix(biases[biases.length - 1], true));// add bias
+		outputs = Activation(passed).GetColumn(0);//pass to output layer
 			
 		return outputs;
 	}
