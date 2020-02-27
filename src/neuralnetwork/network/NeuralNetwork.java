@@ -61,6 +61,16 @@ public class NeuralNetwork {
 		//weight matrix between last hidden layer and output
 		weights[weights.length-1] = new Matrix(outputs.length, hidden[hidden.length-1].length);
 		biases[biases.length - 1] = new float[outputs.length];
+		
+		//randomize weights & biases
+		for(int x =0; x<weights.length;x++) {
+			weights[x].Randomize();
+		}
+		for(int x =0; x<biases.length; x++) {
+			for(int y =0; y<biases[x].length;y++) {
+				biases[x][y] = (float)Math.random();
+			}
+		}
 	}
 	
 	//Returns the total number of layers the network has
@@ -95,7 +105,8 @@ public class NeuralNetwork {
 	public float[] FeedForward(float[] i_) {
 		
 		//Input to first hidden
-		Matrix inputM = new Matrix(i_,true); // put in matrix object
+		inputs = i_;
+		Matrix inputM = new Matrix(inputs,true); // put in matrix object
 		Matrix passed = Matrix.Mul(weights[0], inputM); //matrix multiply
 		passed.Add(new Matrix(biases[0], true)); // add biases
 		hidden[0] = Activation(passed).GetColumn(0);//pass to first hidden layer
@@ -128,24 +139,38 @@ public class NeuralNetwork {
 		
 		//CALCULATE D COST FUNCTION WITH RESPECT TO PREV ACTIVATION (OUTPUT TO HIDDEN)
 		//errors * prime sigma * weight //formula for d cost function with respect to the prev activation prime sigma is just the value of the previous neuron
-		errors[errors.length -2] = new float[hidden[hidden.length -1].length];//Instantiate to the size of last hidden layer
+		errors[errors.length - 2] = new float[hidden[hidden.length -1].length];//Instantiate to the size of last hidden layer
 		Matrix a1 = new Matrix(outputs);//Sigmoid
 		Matrix current_e = new Matrix(outputs);
 		//Transpose (sigmoid -1) to (-sigmoid + 1)
 		current_e.ScalarMul(-1);
-		current_e.ScalarAdd(1);
+		current_e.ScalarAdd(1); //1-sigmoid
 		
 		current_e.HadamardProduct(a1);//sigmoid * (1 - sigmoid)
-		Matrix e = new Matrix(errors[errors.length -1]);
+		Matrix e = new Matrix(errors[errors.length -1]);//Put current error to matrix
 		current_e.HadamardProduct(e);//error * sigmoid * (1 - sigmoid)
 		
-		//Tune weight and bias here using current_e;
 		
+		//D COST WITH RESPECT TO PREV ACTIVATION
 		Matrix prev_e = Matrix.Mul(current_e, weights[weights.length -1]);//error * sigmoid * (1 - sigmoid) * weights
 		errors[errors.length-2] = prev_e.GetRow(0);//put to previous layer errors
+		current_e.ScalarMul(lr);//error * sigmoid * (1 - sigmoid)*learningRate;
+		Matrix b = new Matrix(biases[biases.length - 1]);
+
+		//Tune weight and bias here using current_e;
+		//D COST WITH RESPECT TO BIAS
+		b.Sub(current_e);
+		biases[biases.length-1] = b.GetRow(0);
 		
-		//CALCULATE D COST FUNCTION WITH RESPECT TO PREV ACTIVATION (HIDDEN LAYERS)
-		for(int x = errors.length -2; x<=1; x--) {
+		//D COST WITH RESPECT TO WEIGHTS
+		//Transpose matrix
+		Matrix current_e_t = new Matrix(current_e.GetRow(0), true);
+		Matrix prevActivation = new Matrix(hidden[hidden.length-1]);
+		Matrix adjustments = Matrix.Mul(current_e_t, prevActivation);
+		weights[weights.length -1].Sub(adjustments);
+		
+
+		for(int x = errors.length - 2; x>=1; x--) {
 			errors[x-1] = new float[hidden[x].length];
 			a1 = new Matrix(hidden[x]);
 			current_e = new Matrix(hidden[x]);
@@ -156,13 +181,43 @@ public class NeuralNetwork {
 			e = new Matrix(errors[x]);
 			current_e.HadamardProduct(e);
 			
-			//Tune weight and bias here using current_e;
 			
 			prev_e = Matrix.Mul(current_e, weights[x]);//error * sigmoid * (1 - sigmoid) * weights
 			errors[x-1] = prev_e.GetRow(0);
+			
+			//Tune weight and bias here using current_e;
+			b = new Matrix(biases[x]);
+			current_e.ScalarMul(lr);
+			b.Sub(current_e);
+			
+			current_e_t = new Matrix(current_e.GetRow(0), true);
+			prevActivation = new Matrix(hidden[x-1]);
+			adjustments = Matrix.Mul(current_e_t, prevActivation);
+			weights[x].Sub(adjustments);
+			
 		}
 		
 		//adjust input weights and bias here accourding to first index of errors
+		a1 = new Matrix(hidden[0]);
+		current_e = new Matrix(hidden[0]);
+		
+		current_e.ScalarMul(-1);
+		current_e.ScalarAdd(1);
+		current_e.HadamardProduct(a1);
+		
+		e = new Matrix(errors[0]);
+		current_e.HadamardProduct(e);
+		
+		//Tune biases
+		b = new Matrix(biases[0]);
+		current_e.ScalarMul(lr);
+		b.Sub(current_e);
+		
+		//Tune weights
+		current_e_t = new Matrix(current_e.GetRow(0),true);
+		prevActivation = new Matrix(inputs);
+		adjustments= Matrix.Mul(current_e_t, prevActivation);
+		weights[0].Sub(adjustments);
 		
 	}
 	

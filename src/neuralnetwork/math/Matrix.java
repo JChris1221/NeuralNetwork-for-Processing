@@ -115,6 +115,14 @@ public class Matrix {
 		}
 	}
 	
+	//Changes rows into columns
+	public void Transpose() {
+		Matrix trans = new Matrix(this.Cols(), this.Rows());
+		for(int row = 0; row < trans.Rows(); row++) {
+			trans.mat[row] = this.GetColumn(row);
+		}
+	}
+	
 	//Adds constant value to the matrix
 	public void ScalarAdd(float val) {
 		for(int x = 0; x < this.Rows(); x++) {
