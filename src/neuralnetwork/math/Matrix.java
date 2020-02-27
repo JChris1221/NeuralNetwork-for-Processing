@@ -12,7 +12,7 @@ import neuralnetwork.exceptions.*;
  */
 
 public class Matrix {
-	private float[][] mat; // the matrix represented in 2d array
+	public float[][] mat; // the matrix represented in 2d array
 	
 	//CONSTRUCTORS
 	public Matrix(int rows, int cols){
@@ -101,6 +101,48 @@ public class Matrix {
 		}
 	}
 	
+	//Get the hadamard product of this matrix and matrix argument
+	public void HadamardProduct(Matrix b) {
+		if(this.Rows() != b.Rows() || this.Cols() != b.Cols()) {
+			String m = "Matrices do not match dimensions";
+			throw new MatrixArithmeticException(m);
+		}
+		
+		for(int x = 0; x < this.Rows(); x++) {
+			for(int y = 0; y<this.Cols(); y++) {
+				this.mat[x][y] *= b.GetCell(x, y);
+			}
+		}
+	}
+	
+	//Adds constant value to the matrix
+	public void ScalarAdd(float val) {
+		for(int x = 0; x < this.Rows(); x++) {
+			for(int y = 0; y<this.Cols(); y++) {
+				this.mat[x][y] += val;
+			}
+		}
+	}
+	
+	//Subtracts constant value to the matrix
+	public void ScalarSub(float val) {
+		for(int x = 0; x < this.Rows(); x++) {
+			for(int y = 0; y<this.Cols(); y++) {
+				this.mat[x][y] += val;
+			}
+		}
+	}
+	
+	//Multiply matrix by constant
+	public void ScalarMul(float val) {
+		for(int x = 0; x < this.Rows(); x++) {
+			for(int y = 0; y<this.Cols(); y++) {
+				this.mat[x][y] *= val;
+			}
+		}
+	}
+	
+	
 	//Multiply matrices and return as a new matrix
 	public static Matrix Mul(Matrix a, Matrix b)
 	{
@@ -119,6 +161,7 @@ public class Matrix {
 		
 		return mul;
 	}
+	
 	
 	//Returns the 2d array of the matrix class
 	public float[][] GetMatrix(){
