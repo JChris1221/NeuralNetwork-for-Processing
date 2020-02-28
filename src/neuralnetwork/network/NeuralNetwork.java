@@ -1,9 +1,11 @@
 package neuralnetwork.network;
 
-//import java.util.ArrayList;
+import java.util.ArrayList;
+import java.nio.ByteBuffer;
 import java.lang.Math;
 import neuralnetwork.math.*;
 import neuralnetwork.exceptions.*;
+import processing.core.*;
 
 //A basic multi-layered perceptron
 public class NeuralNetwork {
@@ -15,6 +17,13 @@ public class NeuralNetwork {
 	
 	private Matrix[] weights;
 	private float[][] biases;
+	private int weightCount, biasCount;
+	
+	public int wbCount() {
+		return weightCount + biasCount;
+	}
+	
+
 	
 	//CONSTRUCTOR
 	//WARNING
@@ -71,6 +80,18 @@ public class NeuralNetwork {
 				biases[x][y] = (float)Math.random();
 			}
 		}
+		
+		//Count weights and bias
+		//Weight Count
+		weightCount = 0;
+		for(int x = 0; x<weights.length;x++){
+			weightCount += weights[x].Rows()*weights[x].Cols();
+		}
+		//Biases Count
+		biasCount = 0;
+		for(int x = 0; x<biases.length;x++) {
+			biasCount += biases[x].length;
+		}
 	}
 	
 	//Returns the total number of layers the network has
@@ -85,18 +106,9 @@ public class NeuralNetwork {
 		for(int x = 0; x<hidden.length; x++) {
 			specs += "Hidden Layer " + (x+1) + ": " + hidden[x].length + "\n";
 		}
-		//Weight Count
-		int weightCount = 0;
-		for(int x = 0; x<weights.length;x++){
-			weightCount += weights[x].Rows()*weights[x].Cols();
-		}
-		//Biases Count
-		int biasesCount = 0;
-		for(int x = 0; x<biases.length;x++) {
-			biasesCount += biases[x].length;
-		}
+		
 		specs+="Total Weights: "+weightCount+"\n";
-		specs+="Total Biases: "+biasesCount+"\n";
+		specs+="Total Biases: "+biasCount+"\n";
 		specs+="Outputs: " +outputs.length;
 		return specs;
 	}
@@ -235,6 +247,88 @@ public class NeuralNetwork {
 		return (float)(1/(Math.pow(2.718f, -input) + 1));
 	}
 	
+	
+	//--------------------------SAVE AND LOAD-----------------------------
+	public void LoadNeuralNetworkData(PApplet project, String filePath) {
+		byte[] data = project.loadBytes(filePath);
+		
+		if((data.length/4) != this.wbCount()) {
+			String m = "File does not match network structure";
+			throw new NetworkStructureException(m);
+		}
+		
+		int index = 0;
+		
+		//Load Weights
+		for(int l = 0;l<weights.length;l++) {
+			for(int row = 0; row<weights[l].Rows(); row++) {
+				for(int col = 0; col<weights[l].Cols(); col++){
+					byte[] convert = new byte[] {data[index], data[index+1],data[index+2],data[index+3]};
+					float f = toFloat(convert);
+					weights[l].SetCell(f, row, col);
+					index+=4;
+				}
+			}
+		}
+		
+		//Load Biases
+		for(int x = 0; x<biases.length;x++) {
+			for(int y = 0; y<biases[x].length;y++) {
+				byte[] convert = new byte[] {data[index], data[index+1],data[index+2],data[index+3]};
+				float f = toFloat(convert);
+				biases[x][y] = f;
+				index+=4;
+			}
+		}
+		PApplet.println("Data Loaded");
+	}
+	public void SaveNeuralNetworkData(PApplet project) {
+		//Weights and biases list;
+		ArrayList<Float> wb = new ArrayList<Float>();
+		//int index = 0;
+		
+		//PApplet.println("Getting weights...");
+		//weights
+		for(int l = 0;l<weights.length;l++) {
+			for(int row = 0; row<weights[l].Rows(); row++) {
+				for(int col = 0; col<weights[l].Cols(); col++){
+					wb.add(weights[l].GetCell(row, col));
+				}
+			}
+		}
+		
+		//PApplet.println("Weights Finished");
+		//PApplet.println("Getting biases...");
+		//biases
+		for(int x = 0; x<biases.length;x++) {
+			for(int y = 0; y<biases[x].length;y++) {
+				wb.add(biases[x][y]);
+			}
+		}
+		//PApplet.println("Biases Finished");
+		//Put all weights in the list
+		float[] numbers = new float[wb.size()];
+		int index = 0;
+		for(Float f:wb) {
+			numbers[index] = (f!=null)?f:Float.NaN;
+			index++;
+		}
+		
+		
+		byte[] data = new byte[0];
+		
+		for(int x = 0;x<numbers.length;x++) {
+			byte[] add = toByte(numbers[x]);
+			byte[] stack = data;
+			data = new byte[stack.length+add.length];
+			System.arraycopy(stack, 0, data, 0, stack.length);
+			System.arraycopy(add, 0, data, stack.length, add.length);
+		}
+		
+		project.saveBytes("data/neuralNetworkData.bin", data);
+		PApplet.println("File Saved");
+	}
+	
 	Matrix Activation(Matrix m) {
 		Matrix n = new Matrix(m.Rows(), m.Cols());
 		for(int x = 0; x<m.Rows(); x++)	{
@@ -244,4 +338,23 @@ public class NeuralNetwork {
 		}
 		return n;
 	}
+	private byte[] toByte(int i){
+	  return new byte[]{
+	    (byte)((i >> 24) & 0xff),
+	    (byte)((i >> 16) & 0xff),
+	    (byte)((i >> 8) & 0xff),
+	    (byte)((i >> 0) & 0xff),
+	  };
+	}
+
+	private byte[] toByte(float f){
+	  return toByte(Float.floatToRawIntBits(f));
+	}
+
+	float toFloat(byte[] b){
+	  ByteBuffer bf = ByteBuffer.wrap(b);
+	  float f = bf.getFloat();
+	  return f;
+	}
+	
 }
