@@ -14,6 +14,7 @@ public class NeuralNetwork {
 	private float[] inputs;
 	private float[][] hidden;
 	private float[] outputs;
+	private float[][] errors;
 	
 	private Matrix[] weights;
 	private float[][] biases;
@@ -71,14 +72,11 @@ public class NeuralNetwork {
 		weights[weights.length-1] = new Matrix(outputs.length, hidden[hidden.length-1].length);
 		biases[biases.length - 1] = new float[outputs.length];
 		
-		//randomize weights & biases
-		for(int x =0; x<weights.length;x++) {
-			weights[x].Randomize();
-		}
-		for(int x =0; x<biases.length; x++) {
-			for(int y =0; y<biases[x].length;y++) {
-				biases[x][y] = (float)Math.random();
-			}
+		//randomize weights between input and hidden
+		weights[0].Randomize(1f/layer_neurons[0]);
+		//randomize weights between hidden layers to output
+		for(int x = 1; x<weights.length;x++) {
+			weights[x].Randomize(1f/hidden[x-1].length);
 		}
 		
 		//Count weights and bias
@@ -141,7 +139,7 @@ public class NeuralNetwork {
 	}
 	
 	public void Backpropagate(float[] i_, float[] target){
-		float[][] errors = new float[weights.length][];
+		errors = new float[weights.length][];
 		float[] guess = FeedForward(i_);
 		//output to last hidden layer;
 		errors[errors.length - 1] = new float[outputs.length];//Instantiate last layer of errors
@@ -149,28 +147,31 @@ public class NeuralNetwork {
 			errors[errors.length-1][x] = 2*(guess[x] - target[x]); //put derivatives of the cost to last layer of errors
 		}
 		
-		//CALCULATE D COST FUNCTION WITH RESPECT TO PREV ACTIVATION (OUTPUT TO HIDDEN)
-		//errors * prime sigma * weight //formula for d cost function with respect to the prev activation prime sigma is just the value of the previous neuron
+		//CALCULATE D COST FUNCTION (OUTPUT TO HIDDEN)
+		
 		errors[errors.length - 2] = new float[hidden[hidden.length -1].length];//Instantiate to the size of last hidden layer
 		Matrix a1 = new Matrix(outputs);//Sigmoid
 		Matrix current_e = new Matrix(outputs);
-		//Transpose (sigmoid -1) to (-sigmoid + 1)
+
 		current_e.ScalarMul(-1);
 		current_e.ScalarAdd(1); //1-sigmoid
 		
 		current_e.HadamardProduct(a1);//sigmoid * (1 - sigmoid)
-		Matrix e = new Matrix(errors[errors.length -1]);//Put current error to matrix
+		Matrix e = new Matrix(errors[errors.length -1]);
 		current_e.HadamardProduct(e);//error * sigmoid * (1 - sigmoid)
 		
 		
 		//D COST WITH RESPECT TO PREV ACTIVATION
 		Matrix prev_e = Matrix.Mul(current_e, weights[weights.length -1]);//error * sigmoid * (1 - sigmoid) * weights
 		errors[errors.length-2] = prev_e.GetRow(0);//put to previous layer errors
-		current_e.ScalarMul(lr);//error * sigmoid * (1 - sigmoid)*learningRate;
-		Matrix b = new Matrix(biases[biases.length - 1]);
+		
+
 
 		//Tune weight and bias here using current_e;
+		current_e.ScalarMul(lr); //error * sigmoid * (1 - sigmoid)*learningRate;
+		
 		//D COST WITH RESPECT TO BIAS
+		Matrix b = new Matrix(biases[biases.length - 1]);
 		b.Sub(current_e);
 		biases[biases.length-1] = b.GetRow(0);
 		
@@ -233,18 +234,29 @@ public class NeuralNetwork {
 		
 	}
 	
+	
 	//Get the summation of an array
-	float Summation(float[] col){
-		float sum = 0;
-		for(int x = 0; x<col.length;x++) {
-			sum += col[x];
-		}
-		return sum;
-	}
+//	float Summation(float[] col){
+//		float sum = 0;
+//		for(int x = 0; x<col.length;x++) {
+//			sum += col[x];
+//		}
+//		return sum;
+//	}
 	
 	//Sigmoid function
 	float Activation(float input){
-		return (float)(1/(Math.pow(2.718f, -input) + 1));
+		return (float)(1/(1 + Math.exp(-input)));
+	}
+	
+	Matrix Activation(Matrix m) {
+		Matrix n = new Matrix(m.Rows(), m.Cols());
+		for(int x = 0; x<m.Rows(); x++)	{
+			for(int y = 0;y<m.Cols(); y++) {
+				n.SetCell(Activation(m.GetCell(x, y)), x, y);
+			}
+		}
+		return n;
 	}
 	
 	
@@ -329,15 +341,7 @@ public class NeuralNetwork {
 		PApplet.println("File Saved");
 	}
 	
-	Matrix Activation(Matrix m) {
-		Matrix n = new Matrix(m.Rows(), m.Cols());
-		for(int x = 0; x<m.Rows(); x++)	{
-			for(int y = 0;y<m.Cols(); y++) {
-				n.SetCell(Activation(m.GetCell(x, y)), x, y);
-			}
-		}
-		return n;
-	}
+	
 	private byte[] toByte(int i){
 	  return new byte[]{
 	    (byte)((i >> 24) & 0xff),

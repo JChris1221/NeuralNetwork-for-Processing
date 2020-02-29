@@ -20,11 +20,11 @@ public class Matrix {
 	}
 	
 	public Matrix(float[][] mat_){
-		this.mat = mat_;
+		this.mat = mat_.clone();
 	}
 	
 	public Matrix(float[] mat_) {
-		this.mat = new float[][] {mat_};
+		this.mat = new float[][] {mat_.clone()};
 	}
 	
 	public Matrix(float[] mat_, boolean isColumned) {
@@ -35,7 +35,7 @@ public class Matrix {
 			}
 		}
 		else
-			this.mat = new float[][] {mat_};
+			this.mat = new float[][] {mat_.clone()};
 	}
 	//END CONSTRUCTORS
 	
@@ -54,6 +54,14 @@ public class Matrix {
 		for(int x = 0; x<mat.length; x++){
 			for(int y = 0; y < mat[x].length; y++) {
 				this.mat[x][y] = (float)Math.random();
+			}
+		}
+	}
+	
+	public void Randomize(float variant){
+		for(int x = 0; x<mat.length; x++){
+			for(int y = 0; y < mat[x].length; y++) {
+				this.mat[x][y] = (float)Math.random()*(float)Math.sqrt(variant);
 			}
 		}
 	}
@@ -136,7 +144,7 @@ public class Matrix {
 	public void ScalarSub(float val) {
 		for(int x = 0; x < this.Rows(); x++) {
 			for(int y = 0; y<this.Cols(); y++) {
-				this.mat[x][y] += val;
+				this.mat[x][y] -= val;
 			}
 		}
 	}
@@ -173,7 +181,7 @@ public class Matrix {
 	
 	//Returns the 2d array of the matrix class
 	public float[][] GetMatrix(){
-		return this.mat;
+		return this.mat.clone();
 	}
 	
 	//returns a column on the 2d array
@@ -187,7 +195,7 @@ public class Matrix {
 	
 	//Returns a row on the 2d array
 	public float[] GetRow(int layer){
-		return this.mat[layer];
+		return this.mat[layer].clone();
 	}
 	
 	//Change a value in the 2d array with the indeces given
